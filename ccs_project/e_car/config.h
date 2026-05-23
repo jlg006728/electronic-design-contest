@@ -9,7 +9,7 @@
 #define WHEEL_DIAMETER_M       0.065f
 #define WHEEL_BASE_M           0.150f
 #define WHEEL_CIRCUMFERENCE_M  (3.14159265f * WHEEL_DIAMETER_M)
-#define ENCODER_CPR            585   /* 13线 × 45减速比 (WHEELTEC套件) */
+#define ENCODER_CPR            15000 /* 500线GMR × 30减速比 (WHEELTEC R3X) */
 
 /* ============================================================
  * 速度/时间参数
