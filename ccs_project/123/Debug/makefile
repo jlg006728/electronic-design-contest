@@ -116,20 +116,20 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-empty_LP_MSPM0G3507_nortos_ticlang.out 
+123.out 
 
 EXE_OUTPUTS__QUOTED += \
-"empty_LP_MSPM0G3507_nortos_ticlang.out" 
+"123.out" 
 
 
 # All Target
 all: $(OBJS) $(GEN_CMDS)
-	@$(MAKE) --no-print-directory -Onone "empty_LP_MSPM0G3507_nortos_ticlang.out"
+	@$(MAKE) --no-print-directory -Onone "123.out"
 
 # Tool invocations
-empty_LP_MSPM0G3507_nortos_ticlang.out: $(OBJS) $(GEN_CMDS)
+123.out: $(OBJS) $(GEN_CMDS)
 	@echo 'Arm Linker - building target: "$@"'
-	"C:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wall -Wl,-m"empty_LP_MSPM0G3507_nortos_ticlang.map" -Wl,-i"C:/ti/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/1/Desktop/电赛/ccs_project/empty_LP_MSPM0G3507_nortos_ticlang" -Wl,-i"C:/Users/1/Desktop/电赛/ccs_project/empty_LP_MSPM0G3507_nortos_ticlang/Debug/syscfg" -Wl,-i"C:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="empty_LP_MSPM0G3507_nortos_ticlang_linkInfo.xml" -Wl,--rom_model -o "empty_LP_MSPM0G3507_nortos_ticlang.out" $(ORDERED_OBJS)
+	"C:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/bin/tiarmclang.exe" @"device.opt"  -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O2 -gdwarf-3 -Wall -Wl,-m"123.map" -Wl,-i"C:/ti/mspm0_sdk_2_10_00_04/source" -Wl,-i"C:/Users/1/Desktop/电赛/ccs_project/123" -Wl,-i"C:/Users/1/Desktop/电赛/ccs_project/123/Debug/syscfg" -Wl,-i"C:/ti/ccs2050/ccs/tools/compiler/ti-cgt-armllvm_4.0.4.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="123_linkInfo.xml" -Wl,--rom_model -o "123.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
