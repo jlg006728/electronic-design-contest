@@ -1,8 +1,8 @@
 #ifndef OPENMV_H
 #define OPENMV_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "config.h"
 
 typedef struct {
@@ -15,6 +15,7 @@ typedef struct {
 void openmv_init(void);
 bool openmv_data_ready(void);
 openmv_data_t openmv_get_data(void);
+openmv_data_t openmv_peek_data(void);
 void openmv_uart_isr(uint8_t byte);
 void openmv_request(void);
 

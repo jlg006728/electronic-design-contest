@@ -12,6 +12,10 @@ $RECYCLE.BIN/
 .idea/
 .vscode/
 
+# Nested repositories extracted from reference archives.
+# Keep their source files, but do not turn local .git metadata into submodules.
+**/.git/
+
 # Python
 __pycache__/
 *.pyc

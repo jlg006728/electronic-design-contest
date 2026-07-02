@@ -18,6 +18,7 @@ void sm_init(void);
 system_state_t sm_get_state(void);
 system_mode_t sm_get_mode(void);
 uint8_t sm_get_laps(void);
+uint8_t sm_get_lap_count(void);
 void sm_set_laps(uint8_t n);
 void sm_button_mode(void);
 void sm_button_start(void);

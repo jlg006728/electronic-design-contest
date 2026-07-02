@@ -1,94 +1,123 @@
 #include "gimbal.h"
+#include "board.h"
 #include "pid.h"
-#include <math.h>
-#include "ti_msp_dl_config.h"
 
 static pid_controller_t g_pid_x;
 static pid_controller_t g_pid_y;
 static float g_angle_x;
 static float g_angle_y;
 
-static uint32_t angle_to_ccr(float angle_deg)
+static float clampf(float value, float min_value, float max_value)
 {
-    if (angle_deg < 0.0f)   angle_deg = 0.0f;
-    if (angle_deg > 180.0f) angle_deg = 180.0f;
-    float us = SERVO_MIN_US + angle_deg * SERVO_US_PER_DEG;
-    if (us < SERVO_MIN_US) us = SERVO_MIN_US;
-    if (us > SERVO_MAX_US) us = SERVO_MAX_US;
-    return (uint32_t)(us * (float)PWM_SERVO_TOP / (float)SERVO_PERIOD_US);
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
+static uint16_t angle_to_us(float angle_deg)
+{
+    angle_deg = clampf(angle_deg, SERVO_MIN_DEG, SERVO_MAX_DEG);
+    float span = (float)(SERVO_MAX_US - SERVO_MIN_US);
+    return (uint16_t)((float)SERVO_MIN_US + span * angle_deg / 180.0f);
+}
+
+static float fast_sin(float x)
+{
+    while (x > PI_F) {
+        x -= 2.0f * PI_F;
+    }
+    while (x < -PI_F) {
+        x += 2.0f * PI_F;
+    }
+    float x2 = x * x;
+    return x * (1.0f - x2 / 6.0f + (x2 * x2) / 120.0f);
+}
+
+static float fast_cos(float x)
+{
+    return fast_sin(x + (PI_F * 0.5f));
 }
 
 void gimbal_init(void)
 {
-    g_angle_x = 90.0f;
-    g_angle_y = 90.0f;
+    g_angle_x = GIMBAL_X_CENTER_DEG;
+    g_angle_y = GIMBAL_Y_CENTER_DEG;
 
     pid_init(&g_pid_x, GIMBAL_X_PID_KP, GIMBAL_X_PID_KI, GIMBAL_X_PID_KD,
-             GIMBAL_X_PID_I_MAX, GIMBAL_X_PID_OUT_MAX, 2.0f);
-    pid_set_setpoint(&g_pid_x, 160.0f);
+        GIMBAL_X_PID_I_MAX, GIMBAL_X_PID_OUT_MAX, 2.0f);
+    pid_set_setpoint(&g_pid_x, GIMBAL_IMAGE_CENTER_X);
 
     pid_init(&g_pid_y, GIMBAL_Y_PID_KP, GIMBAL_Y_PID_KI, GIMBAL_Y_PID_KD,
-             GIMBAL_Y_PID_I_MAX, GIMBAL_Y_PID_OUT_MAX, 2.0f);
-    pid_set_setpoint(&g_pid_y, 120.0f);
+        GIMBAL_Y_PID_I_MAX, GIMBAL_Y_PID_OUT_MAX, 2.0f);
+    pid_set_setpoint(&g_pid_y, GIMBAL_IMAGE_CENTER_Y);
 
-    DL_Timer_setCaptureCompareValue(PWM_SERVO_TIMER,
-        angle_to_ccr(90.0f), DL_TIMER_CC_0_INDEX);
-    DL_Timer_setCaptureCompareValue(PWM_SERVO_TIMER,
-        angle_to_ccr(90.0f), DL_TIMER_CC_1_INDEX);
-    DL_TimerG_startCounter(PWM_SERVO_TIMER);
-
+    gimbal_set_angle_x(g_angle_x);
+    gimbal_set_angle_y(g_angle_y);
     gimbal_enable_laser(false);
 }
 
 void gimbal_set_angle_x(float angle_deg)
 {
-    g_angle_x = angle_deg;
-    DL_Timer_setCaptureCompareValue(PWM_SERVO_TIMER,
-        angle_to_ccr(angle_deg), DL_TIMER_CC_0_INDEX);
+    g_angle_x = clampf(angle_deg, GIMBAL_X_ANGLE_MIN_DEG, GIMBAL_X_ANGLE_MAX_DEG);
+    board_set_servo_us(0U, angle_to_us(g_angle_x));
 }
 
 void gimbal_set_angle_y(float angle_deg)
 {
-    g_angle_y = angle_deg;
-    DL_Timer_setCaptureCompareValue(PWM_SERVO_TIMER,
-        angle_to_ccr(angle_deg), DL_TIMER_CC_1_INDEX);
+    g_angle_y = clampf(angle_deg, GIMBAL_Y_ANGLE_MIN_DEG, GIMBAL_Y_ANGLE_MAX_DEG);
+    board_set_servo_us(1U, angle_to_us(g_angle_y));
 }
 
 void gimbal_aiming_update(const openmv_data_t *target)
 {
-    if (target == NULL || !target->detected) return;
+    if (target == 0 || !target->detected) {
+        return;
+    }
 
-    float correction_x = pid_update_positional(&g_pid_x, (float)target->cx);
-    float correction_y = pid_update_positional(&g_pid_y, (float)target->cy);
+    /*
+     * Pixel correction signs depend on the physical gimbal build. If aiming
+     * moves away from the red dot, swap the signs of these two increments.
+     */
+    float dx = pid_update_positional(&g_pid_x, (float)target->cx);
+    float dy = pid_update_positional(&g_pid_y, (float)target->cy);
 
-    gimbal_set_angle_x(g_angle_x + correction_x);
-    gimbal_set_angle_y(g_angle_y + correction_y);
+    gimbal_set_angle_x(g_angle_x + dx);
+    gimbal_set_angle_y(g_angle_y - dy);
 }
 
 void gimbal_circle_update(float car_progress_rad)
 {
-    float dx = CIRCLE_DRAW_RADIUS_CM * 2.0f * cosf(car_progress_rad);
-    float dy = CIRCLE_DRAW_RADIUS_CM * 2.0f * sinf(car_progress_rad);
-    gimbal_set_angle_x(90.0f + dx);
-    gimbal_set_angle_y(90.0f + dy);
+    float servo_radius_deg = 8.0f;
+    float x = GIMBAL_X_CENTER_DEG + servo_radius_deg * fast_cos(car_progress_rad);
+    float y = GIMBAL_Y_CENTER_DEG + servo_radius_deg * fast_sin(car_progress_rad);
+    gimbal_set_angle_x(x);
+    gimbal_set_angle_y(y);
 }
 
 void gimbal_enable_laser(bool enable)
 {
-    if (enable) {
-        DL_GPIO_setPins(GPIO_LASER_PORT, LASER_PIN);
-    } else {
-        DL_GPIO_clearPins(GPIO_LASER_PORT, LASER_PIN);
-    }
+    board_laser_set(enable);
 }
 
 void gimbal_reset(void)
 {
-    g_angle_x = 90.0f;
-    g_angle_y = 90.0f;
-    gimbal_set_angle_x(90.0f);
-    gimbal_set_angle_y(90.0f);
     pid_reset(&g_pid_x);
     pid_reset(&g_pid_y);
+    gimbal_set_angle_x(GIMBAL_X_CENTER_DEG);
+    gimbal_set_angle_y(GIMBAL_Y_CENTER_DEG);
     gimbal_enable_laser(false);
+}
+
+float gimbal_get_angle_x(void)
+{
+    return g_angle_x;
+}
+
+float gimbal_get_angle_y(void)
+{
+    return g_angle_y;
 }
