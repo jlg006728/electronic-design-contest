@@ -20,3 +20,12 @@ $RECYCLE.BIN/
 __pycache__/
 *.pyc
 .claude/
+
+# Local generated caches and transient diagnostics
+tmp/
+tmp_pdf_read/
+tmp_pdf_render/
+tmp_video_frames*/
+debug_video_frames/
+true
+*.autosave
