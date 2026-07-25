@@ -11,6 +11,7 @@ $RECYCLE.BIN/
 *.swo
 .idea/
 .vscode/
+**/.clangd
 
 # Nested repositories extracted from reference archives.
 # Keep their source files, but do not turn local .git metadata into submodules.
@@ -29,3 +30,23 @@ tmp_video_frames*/
 debug_video_frames/
 true
 *.autosave
+
+# CCS and host-test build products. Keep source, project metadata, tests,
+# verification reports, and firmware backups; do not upload rebuildable output.
+**/Debug/
+**/debug/
+*.out
+*.map
+*.o
+*.d
+*.exe
+*.gcda
+*.gcno
+*.gcov
+*.coverage
+*.opt
+*.genlibs
+
+# Python test/runtime caches
+**/__pycache__/
+*.pyc
